@@ -1,6 +1,6 @@
 import Conversation from "../Models/conversationModels.js";
 import Message from "../Models/messageSchema.js"; // Correct import
-
+import { getReciverSocketId,io } from "../Socket/socket.js";
 export const sendMessage = async (req, res) => {
     try {
         const { message } = req.body;
@@ -36,15 +36,17 @@ export const sendMessage = async (req, res) => {
         if (newMessages) {
             chats.messages.push(newMessages._id);
         }
-
-        // socket.io function
         await Promise.all([chats.save(), newMessages.save()]); 
+       
+  //SOCKET.IO function 
+  const reciverSocketId = getReciverSocketId(reciverId);
+  if(reciverSocketId){
+     io.to(reciverSocketId).emit("newMessage",newMessages)
+  }
+
+ res.status(201).send(newMessages)
         
-        res.status(201).send({
-            success: true,
-            message: 'Message sent successfully',
-            data: { ...newMessages.toObject(), date,time   }  // Add formatted date to the response
-        });
+       
     } catch (err) {
         console.error(err); // Log error for debugging
         res.status(500).json({ message: err.message });
